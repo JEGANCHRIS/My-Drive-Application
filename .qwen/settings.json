@@ -5,7 +5,12 @@
       "Bash(npm run *)",
       "Bash(node *)",
       "Bash(taskkill *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(git add *)",
+      "Bash(dir *)",
+      "Bash(type *)",
+      "Bash(git *)",
+      "Bash(findstr *)"
     ]
   },
   "$version": 3
