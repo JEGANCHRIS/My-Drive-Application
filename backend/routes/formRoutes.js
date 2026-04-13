@@ -40,7 +40,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI =
   process.env.GOOGLE_REDIRECT_URI ||
-  "http://localhost:5000/api/form/google/callback";
+  "https://my-drive-application.onrender.com/api/form/google/callback";
 
 // Temporary storage for file metadata during OAuth flow
 const pendingUploads = new Map();
@@ -256,7 +256,7 @@ router.post(
           name: file.originalName,
           size: file.size,
           type: file.type,
-          previewUrl: `http://localhost:5000/api/files/preview/${file._id}`,
+          previewUrl: `https://my-drive-application.onrender.com/api/files/preview/${file._id}`,
         },
         googleDrive: null,
       });
