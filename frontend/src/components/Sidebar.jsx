@@ -18,6 +18,7 @@ function Sidebar({
   currentView,
   setCurrentView,
   setCurrentFolder,
+  onResetFolderNavigation,
   onUploadClick,
   onSettingsClick,
   onLogoutClick,
@@ -159,6 +160,7 @@ function Sidebar({
         <div
           className="sidebar-item dashboard-item"
           onClick={() => {
+            onResetFolderNavigation();
             onDashboardClick();
             setCurrentView("dashboard");
           }}
@@ -169,9 +171,9 @@ function Sidebar({
         <div
           className={`sidebar-item ${currentView === "my-drive" ? "active" : ""}`}
           onClick={() => {
+            onResetFolderNavigation();
             onCloseDashboard();
             setCurrentView("my-drive");
-            setCurrentFolder(null);
           }}
         >
           <FiHardDrive /> <span>My Drive</span>
@@ -180,6 +182,7 @@ function Sidebar({
         <div
           className={`sidebar-item ${currentView === "recent" ? "active" : ""}`}
           onClick={() => {
+            onResetFolderNavigation();
             onCloseDashboard();
             setCurrentView("recent");
           }}
@@ -190,6 +193,7 @@ function Sidebar({
         <div
           className={`sidebar-item ${currentView === "starred" ? "active" : ""}`}
           onClick={() => {
+            onResetFolderNavigation();
             onCloseDashboard();
             setCurrentView("starred");
           }}
@@ -200,6 +204,7 @@ function Sidebar({
         <div
           className={`sidebar-item ${currentView === "bin" ? "active" : ""}`}
           onClick={() => {
+            onResetFolderNavigation();
             onCloseDashboard();
             setCurrentView("bin");
           }}
@@ -210,6 +215,7 @@ function Sidebar({
         <div
           className="sidebar-item"
           onClick={() => {
+            onResetFolderNavigation();
             onCloseDashboard();
             setCurrentView("shared");
           }}
@@ -220,6 +226,7 @@ function Sidebar({
         <div
           className="sidebar-item form-item"
           onClick={() => {
+            onResetFolderNavigation();
             onCloseDashboard();
             setCurrentView("form");
           }}

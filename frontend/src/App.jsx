@@ -107,6 +107,14 @@ function App() {
     setSelectedItems([]);
   };
 
+  // Reset folder navigation (called when clicking sidebar items)
+  const resetFolderNavigation = () => {
+    setCurrentFolder(null);
+    setFolderPath([]);
+    setSelectMode(false);
+    setSelectedItems([]);
+  };
+
   const fetchContents = async () => {
     setLoading(true);
     try {
@@ -694,6 +702,7 @@ function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         setCurrentFolder={setCurrentFolder}
+        onResetFolderNavigation={resetFolderNavigation}
         onUploadClick={handleUploadClick}
         onSettingsClick={handleSettingsClick}
         onLogoutClick={handleLogout}
