@@ -55,23 +55,15 @@ const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/drive-clone";
 mongoose
   .connect(MONGODB_URI)
-  .then(() => console.log("MongoDB connected successfully"))
+  .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
-    process.exit(1);
+    console.error("❌ MongoDB connection error:", err.message);
+    console.log(
+      "⚠️  Server will continue running, but database operations will fail",
+    );
   });
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/files", fileRoutes);
-app.use("/api/folders", folderRoutes);
-app.use("/api/summarize", summarizeRoutes);
-app.use("/api/activities", activityRoutes);
-app.use("/api/storage", storageRoutes);
-app.use("/api/form", require("./routes/formRoutes"));
-app.use("/", policyRoutes);
-
-// Health check endpoint (CORS-free)
+// Health check endpoint (before routes)
 app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
@@ -79,10 +71,12 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "production",
     cors: "enabled",
+    mongodb:
+      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
   });
 });
 
-// Root endpoint
+// Root endpoint (before routes)
 app.get("/", (req, res) => {
   res.json({
     message: "My Drive API",
@@ -95,6 +89,16 @@ app.get("/", (req, res) => {
     },
   });
 });
+
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/files", fileRoutes);
+app.use("/api/folders", folderRoutes);
+app.use("/api/summarize", summarizeRoutes);
+app.use("/api/activities", activityRoutes);
+app.use("/api/storage", storageRoutes);
+app.use("/api/form", require("./routes/formRoutes"));
+app.use("/", policyRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
