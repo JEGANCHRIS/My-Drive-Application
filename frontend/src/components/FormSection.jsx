@@ -160,13 +160,16 @@ function FormSection({ onRefresh }) {
       console.log("Submitting form...");
       console.log("Upload to Google Drive:", uploadToGoogleDrive);
 
-      const response = await fetch("http://localhost:5000/api/form/submit", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        "https://my-drive-application.onrender.com/api/form/submit",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: uploadFormData,
         },
-        body: uploadFormData,
-      });
+      );
 
       const data = await response.json();
 

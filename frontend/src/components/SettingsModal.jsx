@@ -19,11 +19,14 @@ function SettingsModal({ onClose, currentUser }) {
   const fetchStorageData = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/storage/usage", {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
+      const response = await fetch(
+        "https://my-drive-application.onrender.com/api/storage/usage",
+        {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
         },
-      });
+      );
       const data = await response.json();
       setStorageData(data);
     } catch (error) {

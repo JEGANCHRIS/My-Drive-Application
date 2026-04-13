@@ -38,7 +38,7 @@ function Sidebar({
       // Fetch all files from backend
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:5000/api/files?isDeleted=false",
+        "https://my-drive-application.onrender.com/api/files?isDeleted=false",
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : "",

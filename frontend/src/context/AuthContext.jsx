@@ -21,10 +21,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await axios.post("http://localhost:5000/api/auth/login", {
-      email,
-      password,
-    });
+    const response = await axios.post(
+      "https://my-drive-application.onrender.com/api/auth/login",
+      {
+        email,
+        password,
+      },
+    );
 
     const { token, user } = response.data;
 
@@ -40,12 +43,12 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     const response = await axios.post(
-      "http://localhost:5000/api/auth/register",
+      "https://my-drive-application.onrender.com/api/auth/register",
       {
         name,
         email,
         password,
-      }
+      },
     );
 
     const { token, user } = response.data;

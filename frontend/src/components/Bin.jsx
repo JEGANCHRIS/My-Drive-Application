@@ -24,11 +24,11 @@ function Bin({ onRestore, onDeletePermanently, onEmptyBin }) {
       };
 
       const filesRes = await fetch(
-        "http://localhost:5000/api/files?isDeleted=true",
+        "https://my-drive-application.onrender.com/api/files?isDeleted=true",
         { headers },
       );
       const foldersRes = await fetch(
-        "http://localhost:5000/api/folders?isDeleted=true",
+        "https://my-drive-application.onrender.com/api/folders?isDeleted=true",
         { headers },
       );
 

@@ -24,7 +24,7 @@ function UploadButton({ currentFolder, currentUser, onUploadComplete }) {
         const folderName = folderPath.split("/")[0];
 
         const folderResponse = await fetch(
-          "http://localhost:5000/api/folders",
+          "https://my-drive-application.onrender.com/api/folders",
           {
             method: "POST",
             headers: {
@@ -72,7 +72,7 @@ function UploadButton({ currentFolder, currentUser, onUploadComplete }) {
         );
 
         const response = await axios.post(
-          "http://localhost:5000/api/files/upload",
+          "https://my-drive-application.onrender.com/api/files/upload",
           formData,
           {
             headers: {

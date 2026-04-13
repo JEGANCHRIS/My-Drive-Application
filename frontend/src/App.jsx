@@ -113,7 +113,7 @@ function App() {
       // If we're inside a folder, fetch its contents regardless of currentView
       if (currentFolder) {
         const filesResponse = await fetch(
-          `http://localhost:5000/api/files?folderId=${currentFolder}&isDeleted=false`,
+          `https://my-drive-application.onrender.com/api/files?folderId=${currentFolder}&isDeleted=false`,
           { headers: getAuthHeaders() },
         );
         const filesData = await filesResponse.json();
@@ -121,7 +121,7 @@ function App() {
         setAllFiles(Array.isArray(filesData) ? filesData : []);
 
         const foldersResponse = await fetch(
-          `http://localhost:5000/api/folders?parentFolderId=${currentFolder}&isDeleted=false`,
+          `https://my-drive-application.onrender.com/api/folders?parentFolderId=${currentFolder}&isDeleted=false`,
           { headers: getAuthHeaders() },
         );
         const foldersData = await foldersResponse.json();
@@ -129,7 +129,7 @@ function App() {
       } else if (currentView === "bin") {
         // Fetch deleted items for bin
         const filesResponse = await fetch(
-          `http://localhost:5000/api/files?isDeleted=true`,
+          `https://my-drive-application.onrender.com/api/files?isDeleted=true`,
           { headers: getAuthHeaders() },
         );
         const filesData = await filesResponse.json();
@@ -137,7 +137,7 @@ function App() {
         setFiles(Array.isArray(filesData) ? filesData : []);
 
         const foldersResponse = await fetch(
-          `http://localhost:5000/api/folders?isDeleted=true`,
+          `https://my-drive-application.onrender.com/api/folders?isDeleted=true`,
           { headers: getAuthHeaders() },
         );
         const foldersData = await foldersResponse.json();
@@ -145,7 +145,7 @@ function App() {
       } else if (currentView === "starred") {
         // Fetch starred items
         const response = await fetch(
-          `http://localhost:5000/api/files/starred`,
+          `https://my-drive-application.onrender.com/api/files/starred`,
           {
             headers: getAuthHeaders(),
           },
@@ -155,9 +155,12 @@ function App() {
         setFolders(Array.isArray(data.folders) ? data.folders : []);
       } else if (currentView === "recent") {
         // Fetch recent uploads
-        const response = await fetch(`http://localhost:5000/api/files/recent`, {
-          headers: getAuthHeaders(),
-        });
+        const response = await fetch(
+          `https://my-drive-application.onrender.com/api/files/recent`,
+          {
+            headers: getAuthHeaders(),
+          },
+        );
         const data = await response.json();
         const recentFiles = Array.isArray(data)
           ? data.filter((item) => item.itemType === "file")
@@ -170,7 +173,7 @@ function App() {
       } else {
         // Fetch normal drive contents
         const filesResponse = await fetch(
-          `http://localhost:5000/api/files?folderId=${currentFolder || "null"}&isDeleted=false`,
+          `https://my-drive-application.onrender.com/api/files?folderId=${currentFolder || "null"}&isDeleted=false`,
           { headers: getAuthHeaders() },
         );
         const filesData = await filesResponse.json();
@@ -178,7 +181,7 @@ function App() {
         setAllFiles(Array.isArray(filesData) ? filesData : []);
 
         const foldersResponse = await fetch(
-          `http://localhost:5000/api/folders?parentFolderId=${currentFolder || "null"}&isDeleted=false`,
+          `https://my-drive-application.onrender.com/api/folders?parentFolderId=${currentFolder || "null"}&isDeleted=false`,
           { headers: getAuthHeaders() },
         );
         const foldersData = await foldersResponse.json();
@@ -220,7 +223,7 @@ function App() {
   const handlePreview = async (item, type) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/${type}s/preview/${item._id}`,
+        `https://my-drive-application.onrender.com/api/${type}s/preview/${item._id}`,
         { headers: getAuthHeaders() },
       );
       const data = await response.json();
@@ -238,7 +241,7 @@ function App() {
 
   const handleDownload = async (item, type) => {
     window.open(
-      `http://localhost:5000/api/${type}s/download/${item._id}`,
+      `https://my-drive-application.onrender.com/api/${type}s/download/${item._id}`,
       "_blank",
     );
   };
@@ -252,7 +255,7 @@ function App() {
       onConfirm: async () => {
         try {
           await fetch(
-            `http://localhost:5000/api/${type}s/move-to-bin/${item._id}`,
+            `https://my-drive-application.onrender.com/api/${type}s/move-to-bin/${item._id}`,
             { method: "PATCH", headers: getAuthHeaders() },
           );
           fetchContents();
@@ -267,10 +270,13 @@ function App() {
 
   const handleStarToggle = async (item, type) => {
     try {
-      await fetch(`http://localhost:5000/api/${type}s/star/${item._id}`, {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-      });
+      await fetch(
+        `https://my-drive-application.onrender.com/api/${type}s/star/${item._id}`,
+        {
+          method: "PATCH",
+          headers: getAuthHeaders(),
+        },
+      );
       fetchContents();
     } catch (error) {
       console.error("Error toggling star:", error);
@@ -288,15 +294,21 @@ function App() {
 
     if (newName && newName !== (item.originalName || item.name)) {
       try {
-        await fetch(`http://localhost:5000/api/${type}s/rename/${item._id}`, {
-          method: "PATCH",
-          headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-          body: JSON.stringify({
-            newName,
-            userEmail: currentUser.email,
-            userName: currentUser.name,
-          }),
-        });
+        await fetch(
+          `https://my-drive-application.onrender.com/api/${type}s/rename/${item._id}`,
+          {
+            method: "PATCH",
+            headers: {
+              ...getAuthHeaders(),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              newName,
+              userEmail: currentUser.email,
+              userName: currentUser.name,
+            }),
+          },
+        );
         fetchContents();
         toast.success("Renamed successfully!");
       } catch (error) {
@@ -308,14 +320,17 @@ function App() {
 
   const handleCopy = async (item, type) => {
     try {
-      await fetch(`http://localhost:5000/api/${type}s/copy/${item._id}`, {
-        method: "POST",
-        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userEmail: currentUser.email,
-          userName: currentUser.name,
-        }),
-      });
+      await fetch(
+        `https://my-drive-application.onrender.com/api/${type}s/copy/${item._id}`,
+        {
+          method: "POST",
+          headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userEmail: currentUser.email,
+            userName: currentUser.name,
+          }),
+        },
+      );
       fetchContents();
       toast.success("Copy created successfully!");
     } catch (error) {
@@ -332,7 +347,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/summarize/summarize/${item._id}`,
+        `https://my-drive-application.onrender.com/api/summarize/summarize/${item._id}`,
         { headers: getAuthHeaders() },
       );
       const data = await response.json();
@@ -375,7 +390,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/${type}s/share/${item._id}`,
+        `https://my-drive-application.onrender.com/api/${type}s/share/${item._id}`,
         {
           method: "POST",
           headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
@@ -419,10 +434,13 @@ function App() {
 
   const handleRestoreFromBin = async (id, type) => {
     try {
-      await fetch(`http://localhost:5000/api/${type}s/restore/${id}`, {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-      });
+      await fetch(
+        `https://my-drive-application.onrender.com/api/${type}s/restore/${id}`,
+        {
+          method: "PATCH",
+          headers: getAuthHeaders(),
+        },
+      );
       setBinRefreshKey((prev) => prev + 1);
       fetchContents();
       toast.success("Item restored successfully!");
@@ -434,10 +452,13 @@ function App() {
 
   const handlePermanentDelete = async (id, type) => {
     try {
-      await fetch(`http://localhost:5000/api/${type}s/permanent/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
+      await fetch(
+        `https://my-drive-application.onrender.com/api/${type}s/permanent/${id}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        },
+      );
       setBinRefreshKey((prev) => prev + 1);
       fetchContents();
       toast.success("Item permanently deleted");
@@ -456,10 +477,13 @@ function App() {
       confirmText: "Empty Bin",
       onConfirm: async () => {
         try {
-          await fetch(`http://localhost:5000/api/files/bin/empty`, {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          });
+          await fetch(
+            `https://my-drive-application.onrender.com/api/files/bin/empty`,
+            {
+              method: "DELETE",
+              headers: getAuthHeaders(),
+            },
+          );
           setBinRefreshKey((prev) => prev + 1);
           fetchContents();
           toast.success("Bin emptied successfully");
@@ -533,7 +557,7 @@ function App() {
           const [type, id] = key.split("-");
           try {
             await fetch(
-              `http://localhost:5000/api/${type}s/move-to-bin/${id}`,
+              `https://my-drive-application.onrender.com/api/${type}s/move-to-bin/${id}`,
               { method: "PATCH", headers: getAuthHeaders() },
             );
             successCount++;

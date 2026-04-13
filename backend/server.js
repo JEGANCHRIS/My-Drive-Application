@@ -19,7 +19,15 @@ const policyRoutes = require("./routes/policyRoutes");
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // Local development
+      "https://my-drive-application-1.onrender.com", // Production frontend
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

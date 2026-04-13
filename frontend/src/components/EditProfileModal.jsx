@@ -46,7 +46,7 @@ function EditProfileModal({ isOpen, onClose, currentUser, onUpdate }) {
       if (currentUser?.avatar) {
         const imageUrl = currentUser.avatar.startsWith("http")
           ? currentUser.avatar
-          : `http://localhost:5000${currentUser.avatar}`;
+          : `https://my-drive-application.onrender.com${currentUser.avatar}`;
         setPreviewImage(imageUrl);
       } else {
         setPreviewImage("");
@@ -85,7 +85,7 @@ function EditProfileModal({ isOpen, onClose, currentUser, onUpdate }) {
 
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:5000/api/auth/upload-profile-picture",
+        "https://my-drive-application.onrender.com/api/auth/upload-profile-picture",
         {
           method: "POST",
           headers: {
@@ -138,14 +138,17 @@ function EditProfileModal({ isOpen, onClose, currentUser, onUpdate }) {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/auth/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        "https://my-drive-application.onrender.com/api/auth/profile",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData),
-      });
+      );
 
       const data = await response.json();
 

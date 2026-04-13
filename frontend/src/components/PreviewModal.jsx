@@ -26,7 +26,7 @@ function PreviewModal({ file, onClose, onDownload, onShare }) {
     try {
       setMediaError(false);
       const response = await fetch(
-        `http://localhost:5000/api/files/preview/${file._id}`,
+        `https://my-drive-application.onrender.com/api/files/preview/${file._id}`,
       );
       const data = await response.json();
       setPreviewData(data);

@@ -40,11 +40,14 @@ function Dashboard({ onEditProfile }) {
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/auth/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        "https://my-drive-application.onrender.com/api/auth/profile",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -61,11 +64,14 @@ function Dashboard({ onEditProfile }) {
   const fetchStorageStats = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/storage/usage", {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        "https://my-drive-application.onrender.com/api/storage/usage",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -81,7 +87,7 @@ function Dashboard({ onEditProfile }) {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:5000/api/files?isDeleted=false",
+        "https://my-drive-application.onrender.com/api/files?isDeleted=false",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -116,7 +122,7 @@ function Dashboard({ onEditProfile }) {
 
       // Get starred items count
       const starredRes = await fetch(
-        "http://localhost:5000/api/files/starred",
+        "https://my-drive-application.onrender.com/api/files/starred",
         { headers },
       );
       const starredData = await starredRes.json();
@@ -125,13 +131,13 @@ function Dashboard({ onEditProfile }) {
 
       // Get bin items count
       const binFilesRes = await fetch(
-        "http://localhost:5000/api/files?isDeleted=true",
+        "https://my-drive-application.onrender.com/api/files?isDeleted=true",
         { headers },
       );
       const binFiles = await binFilesRes.json();
 
       const binFoldersRes = await fetch(
-        "http://localhost:5000/api/folders?isDeleted=true",
+        "https://my-drive-application.onrender.com/api/folders?isDeleted=true",
         { headers },
       );
       const binFolders = await binFoldersRes.json();
@@ -228,7 +234,7 @@ function Dashboard({ onEditProfile }) {
                 src={
                   userProfile.avatar.startsWith("http")
                     ? userProfile.avatar
-                    : `http://localhost:5000${userProfile.avatar}`
+                    : `https://my-drive-application.onrender.com${userProfile.avatar}`
                 }
                 alt="Profile"
                 className="avatar-img"
