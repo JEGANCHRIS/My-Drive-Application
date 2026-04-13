@@ -259,8 +259,15 @@ router.get("/preview/:id", async (req, res) => {
     if (!file) return res.status(404).json({ error: "File not found" });
 
     // Check if file exists
-    if (!(await fs.pathExists(file.path))) {
-      return res.status(404).json({ error: "File not found on disk" });
+    const fileExists = await fs.pathExists(file.path);
+    if (!fileExists) {
+      console.warn("⚠️ File not found on disk:", file.path);
+      return res.status(404).json({
+        error: "File not found on disk",
+        message:
+          "The file has been deleted or is not available on this server.",
+        originalName: file.originalName,
+      });
     }
 
     const fileType = file.type || "";
