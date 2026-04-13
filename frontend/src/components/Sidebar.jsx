@@ -265,7 +265,8 @@ function Sidebar({
         <div
           className="sidebar-item"
           onClick={() => {
-            window.location.href = "/drive/privacy-policy";
+            window.location.href =
+              "https://my-drive-application.onrender.com/privacy-policy";
           }}
         >
           <FiShield /> <span>Privacy Policy</span>
@@ -274,7 +275,8 @@ function Sidebar({
         <div
           className="sidebar-item"
           onClick={() => {
-            window.location.href = "/drive/terms-and-conditions";
+            window.location.href =
+              "https://my-drive-application.onrender.com/terms";
           }}
         >
           <FiFileText /> <span>Terms of Service</span>
