@@ -10,7 +10,8 @@
       "Bash(dir *)",
       "Bash(type *)",
       "Bash(git *)",
-      "Bash(findstr *)"
+      "Bash(findstr *)",
+      "Bash(git commit *)"
     ]
   },
   "$version": 3

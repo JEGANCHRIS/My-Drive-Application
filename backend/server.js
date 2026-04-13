@@ -21,11 +21,30 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173", // Local development
-      "https://my-drive-application-1.onrender.com", // Production frontend
-    ],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        "http://localhost:5173", // Local development
+        "http://localhost:4173", // Local preview
+        "https://my-drive-application-1.onrender.com", // Production frontend
+        "https://my-drive-application.onrender.com", // Backend URL
+      ];
+
+      // Allow all origins in development, restrict in production
+      if (
+        process.env.NODE_ENV === "development" ||
+        allowedOrigins.indexOf(origin) !== -1
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 app.use(express.json());
@@ -52,9 +71,29 @@ app.use("/api/storage", storageRoutes);
 app.use("/api/form", require("./routes/formRoutes"));
 app.use("/", policyRoutes);
 
-// Health check endpoint
+// Health check endpoint (CORS-free)
 app.get("/api/health", (req, res) => {
-  res.json({ status: "OK", message: "Server is running" });
+  res.json({
+    status: "OK",
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "production",
+    cors: "enabled",
+  });
+});
+
+// Root endpoint
+app.get("/", (req, res) => {
+  res.json({
+    message: "My Drive API",
+    version: "1.0.0",
+    endpoints: {
+      health: "/api/health",
+      auth: "/api/auth",
+      files: "/api/files",
+      folders: "/api/folders",
+    },
+  });
 });
 
 // Error handling middleware
