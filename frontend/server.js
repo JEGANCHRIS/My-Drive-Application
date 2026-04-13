@@ -1,38 +1,36 @@
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Set correct MIME types for static assets
+// Serve static files from dist directory with correct MIME types
+const distPath = path.join(__dirname, "dist");
+
+// Set up static file serving with proper MIME types
 app.use(
-  express.static(path.join(__dirname, "dist"), {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".css")) {
-        res.setHeader("Content-Type", "text/css");
-      } else if (filePath.endsWith(".js")) {
-        res.setHeader("Content-Type", "application/javascript");
+  express.static(distPath, {
+    index: false,
+    setHeaders: function (res, path) {
+      if (path.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css; charset=utf-8");
+      } else if (path.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+      } else if (path.endsWith(".html")) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
       }
     },
   }),
 );
 
-// Catch-all: serve index.html for client-side routing
-app.get("*", (req, res, next) => {
-  // If it looks like a file request, let static middleware handle it
-  if (req.url.includes(".")) {
-    return next();
-  }
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
+// Handle client-side routing - serve index.html for all non-file routes
+app.get("*", function (req, res) {
+  res.sendFile(path.join(distPath, "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Frontend server running on port ${PORT}`);
+app.listen(PORT, function () {
+  console.log("✅ Frontend server running on port " + PORT);
+  console.log("📁 Serving files from: " + distPath);
 });
 
-export default app;
+module.exports = app;
