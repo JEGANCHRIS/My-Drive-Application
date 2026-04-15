@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // Serve static files from dist directory with correct MIME types
 const distPath = path.join(__dirname, "dist");
@@ -28,7 +28,8 @@ app.get("*", function (req, res) {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-app.listen(PORT, function () {
+// Bind to 0.0.0.0 for Render deployment
+app.listen(PORT, "0.0.0.0", function () {
   console.log("✅ Frontend server running on port " + PORT);
   console.log("📁 Serving files from: " + distPath);
 });
