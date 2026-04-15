@@ -49,6 +49,15 @@ const fileSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // Google Drive integration
+  googleDriveId: {
+    type: String,
+    default: null,
+  },
+  googleDriveLink: {
+    type: String,
+    default: null,
+  },
 });
 
 fileSchema.pre("save", async function () {

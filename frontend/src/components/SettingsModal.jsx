@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { FiX, FiUser, FiHardDrive, FiFile, FiTrash2 } from "react-icons/fi";
+import GoogleDriveStatus from "./GoogleDriveStatus";
 
 function SettingsModal({ onClose, currentUser }) {
   const [storageData, setStorageData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const API_BASE_URL =
+    import.meta.env.VITE_API_URL ||
+    "https://my-drive-application.onrender.com/api";
 
   useEffect(() => {
     fetchStorageData();
@@ -19,14 +24,11 @@ function SettingsModal({ onClose, currentUser }) {
   const fetchStorageData = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        "https://my-drive-application.onrender.com/api/storage/usage",
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
+      const response = await fetch(`${API_BASE_URL}/storage/usage`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
         },
-      );
+      });
       const data = await response.json();
       setStorageData(data);
     } catch (error) {
@@ -83,6 +85,13 @@ function SettingsModal({ onClose, currentUser }) {
                 details.
               </p>
             )}
+          </div>
+
+          <div className="settings-section">
+            <h4>
+              <FiHardDrive /> Google Drive Integration
+            </h4>
+            <GoogleDriveStatus />
           </div>
 
           <div className="settings-section">

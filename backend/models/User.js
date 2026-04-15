@@ -36,6 +36,18 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 5 * 1024 * 1024 * 1024, // 5GB default
   },
+  // Google Drive integration
+  googleDrive: {
+    connected: {
+      type: Boolean,
+      default: false,
+    },
+    googleEmail: String,
+    accessToken: String,
+    refreshToken: String,
+    tokenExpiry: Date,
+    connectedAt: Date,
+  },
 });
 
 userSchema.pre("save", async function () {
