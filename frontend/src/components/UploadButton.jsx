@@ -115,7 +115,8 @@ function UploadButton({ currentFolder, onUploadComplete }) {
           if (googleDriveConnected) {
             try {
               const googleAuth = await ensureGoogleDriveAccessToken({
-                interactive: false,
+                interactive: true,
+                prompt: "",
               });
               await uploadFileToGoogleDrive(file, googleAuth.accessToken);
               uploadedToGoogleDrive = true;

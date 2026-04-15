@@ -110,7 +110,7 @@ const fetchGoogleAccountEmail = async (accessToken) => {
   }
 };
 
-const requestGoogleDriveAccessToken = async ({ interactive }) => {
+const requestGoogleDriveAccessToken = async ({ interactive, prompt = "" }) => {
   await loadGoogleIdentityScript();
 
   const clientId = getGoogleClientId();
@@ -151,19 +151,22 @@ const requestGoogleDriveAccessToken = async ({ interactive }) => {
       },
     });
 
-    tokenClient.requestAccessToken({ prompt: interactive ? "consent" : "" });
+    tokenClient.requestAccessToken({
+      prompt: interactive ? prompt : "",
+    });
   });
 };
 
 export const ensureGoogleDriveAccessToken = async ({
   interactive = false,
+  prompt = "",
 } = {}) => {
   if (hasValidStoredGoogleDriveAuth()) {
     return readStoredGoogleDriveAuth();
   }
 
   try {
-    return await requestGoogleDriveAccessToken({ interactive });
+    return await requestGoogleDriveAccessToken({ interactive, prompt });
   } catch (error) {
     if (!interactive) {
       throw new Error("GOOGLE_DRIVE_AUTH_REQUIRED");

@@ -33,7 +33,10 @@ const GoogleDriveConnected = () => {
     setStatus("loading");
 
     try {
-      const auth = await ensureGoogleDriveAccessToken({ interactive: true });
+      const auth = await ensureGoogleDriveAccessToken({
+        interactive: true,
+        prompt: "consent",
+      });
       setGoogleEmail(auth?.email || "");
       setStatus("success");
     } catch (error) {

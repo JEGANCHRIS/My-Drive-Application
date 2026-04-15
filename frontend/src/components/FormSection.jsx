@@ -209,25 +209,16 @@ function FormSection({ onRefresh }) {
       if (shouldUploadToGoogleDrive) {
         try {
           const googleAuth = await ensureGoogleDriveAccessToken({
-            interactive: false,
+            interactive: true,
+            prompt: "",
           });
           await uploadFileToGoogleDrive(fileToUpload, googleAuth.accessToken);
           toast.success("File also uploaded to Google Drive!");
         } catch (googleError) {
           console.error("Google Drive upload error:", googleError);
-
-          if (googleError.message === "GOOGLE_DRIVE_AUTH_REQUIRED") {
-            toast.info(
-              "Google Drive is not authorized in this browser yet. Open /google-drive-connected in another tab once, then upload again.",
-              {
-                autoClose: 6000,
-              },
-            );
-          } else {
-            toast.warning(
-              "File reached My Drive, but the Google Drive upload failed.",
-            );
-          }
+          toast.warning(
+            "File reached My Drive, but the Google Drive upload failed.",
+          );
         }
       }
 
@@ -437,7 +428,7 @@ function FormSection({ onRefresh }) {
           <p className="checkbox-hint">
             {hasValidStoredGoogleDriveAuth()
               ? `Ready for ${googleDriveAuth?.email || "your Google account"}`
-              : "Authorize once in another tab at /google-drive-connected, then uploads will go straight to Google Drive without a sign-in prompt here."}
+              : "If needed, submit will automatically ask Google for permission in a popup and then continue the upload."}
           </p>
         </div>
 
