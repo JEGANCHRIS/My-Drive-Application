@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FiUpload,
   FiX,
@@ -13,6 +13,13 @@ import {
   FiFileText,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
+import {
+  ensureGoogleDriveAccessToken,
+  GOOGLE_DRIVE_AUTH_EVENT,
+  hasValidStoredGoogleDriveAuth,
+  readStoredGoogleDriveAuth,
+  uploadFileToGoogleDrive,
+} from "../utils/googleDriveAuth";
 
 function FormSection({ onRefresh }) {
   const [formData, setFormData] = useState({
@@ -28,7 +35,22 @@ function FormSection({ onRefresh }) {
   const [showPreview, setShowPreview] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadToGoogleDrive, setUploadToGoogleDrive] = useState(false);
+  const [googleDriveAuth, setGoogleDriveAuth] = useState(
+    readStoredGoogleDriveAuth(),
+  );
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const syncGoogleDriveAuth = () => {
+      setGoogleDriveAuth(readStoredGoogleDriveAuth());
+    };
+
+    window.addEventListener(GOOGLE_DRIVE_AUTH_EVENT, syncGoogleDriveAuth);
+
+    return () => {
+      window.removeEventListener(GOOGLE_DRIVE_AUTH_EVENT, syncGoogleDriveAuth);
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -45,20 +67,23 @@ function FormSection({ onRefresh }) {
       type.includes("zip") ||
       type.includes("rar") ||
       type.includes("archive")
-    )
+    ) {
       return <FiArchive size={20} />;
+    }
     if (
       type.includes("text") ||
       type.includes("json") ||
       type.includes("xml") ||
       type.includes("javascript")
-    )
+    ) {
       return <FiCode size={20} />;
+    }
     return <FiFile size={20} />;
   };
 
   const getPreviewType = (file) => {
     if (!file) return null;
+
     const type = file.type;
     const ext = file.name.split(".").pop().toLowerCase();
 
@@ -78,8 +103,9 @@ function FormSection({ onRefresh }) {
       ext === "ts" ||
       ext === "html" ||
       ext === "css"
-    )
+    ) {
       return "text";
+    }
     return "unsupported";
   };
 
@@ -87,51 +113,53 @@ function FormSection({ onRefresh }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    console.log("File selected:", file.name, file.type, file.size);
-
     setSelectedFile(file);
-    const type = getPreviewType(file);
-    console.log("Preview type:", type);
-    setPreviewType(type);
-    setShowPreview(true); // Auto-show preview
+    setPreviewType(getPreviewType(file));
+    setShowPreview(true);
 
-    // Create preview based on file type
+    const type = getPreviewType(file);
     const reader = new FileReader();
 
     if (type === "image" || type === "video" || type === "audio") {
-      reader.onloadend = () => {
-        console.log("Data URL created, length:", reader.result?.length);
-        setPreviewUrl(reader.result);
-      };
-      reader.onerror = () => {
-        console.error("Error reading file as data URL");
-        toast.error("Failed to load file preview");
-      };
+      reader.onloadend = () => setPreviewUrl(reader.result);
+      reader.onerror = () => toast.error("Failed to load file preview");
       reader.readAsDataURL(file);
-    } else if (type === "text") {
-      reader.onloadend = () => {
-        console.log("Text file read, length:", reader.result?.length);
-        setPreviewUrl(reader.result);
-      };
-      reader.onerror = () => {
-        console.error("Error reading text file");
-        toast.error("Failed to load text preview");
-      };
+      return;
+    }
+
+    if (type === "text") {
+      reader.onloadend = () => setPreviewUrl(reader.result);
+      reader.onerror = () => toast.error("Failed to load text preview");
       reader.readAsText(file);
-    } else if (type === "pdf") {
-      reader.onloadend = () => {
-        console.log("PDF data URL created, length:", reader.result?.length);
-        setPreviewUrl(reader.result);
-      };
-      reader.onerror = () => {
-        console.error("Error reading PDF");
-        toast.error("Failed to load PDF preview");
-      };
+      return;
+    }
+
+    if (type === "pdf") {
+      reader.onloadend = () => setPreviewUrl(reader.result);
+      reader.onerror = () => toast.error("Failed to load PDF preview");
       reader.readAsDataURL(file);
-    } else {
-      // For non-preview files, just show file info
-      console.log("No preview available for this file type");
-      setPreviewUrl(null);
+      return;
+    }
+
+    setPreviewUrl(null);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      height: "",
+      weight: "",
+    });
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setPreviewType(null);
+    setShowPreview(false);
+    setUploadToGoogleDrive(false);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -146,20 +174,18 @@ function FormSection({ onRefresh }) {
     setUploading(true);
 
     try {
+      const fileToUpload = selectedFile;
+      const shouldUploadToGoogleDrive = uploadToGoogleDrive;
       const uploadFormData = new FormData();
-      uploadFormData.append("formFile", selectedFile);
+      uploadFormData.append("formFile", fileToUpload);
       uploadFormData.append("name", formData.name);
       uploadFormData.append("email", formData.email);
       uploadFormData.append("phone", formData.phone);
       uploadFormData.append("height", formData.height);
       uploadFormData.append("weight", formData.weight);
-      uploadFormData.append("uploadToGoogleDrive", uploadToGoogleDrive);
+      uploadFormData.append("uploadToGoogleDrive", "false");
 
       const token = localStorage.getItem("token");
-
-      console.log("Submitting form...");
-      console.log("Upload to Google Drive:", uploadToGoogleDrive);
-
       const response = await fetch(
         "https://my-drive-application.onrender.com/api/form/submit",
         {
@@ -173,48 +199,40 @@ function FormSection({ onRefresh }) {
 
       const data = await response.json();
 
-      if (response.ok) {
-        toast.success(
-          "Form submitted successfully! File uploaded to My Drive.",
-        );
-
-        console.log("Backend response:", data);
-
-        // Check if Google Drive upload was successful
-        if (data.googleDrive?.success) {
-          toast.success("✅ File also uploaded to Google Drive!");
-        } else if (data.googleDrive?.needsConnection) {
-          toast.info(
-            data.googleDrive.message ||
-              "Please connect Google Drive in Settings for automatic uploads",
-            {
-              autoClose: 5000,
-            },
-          );
-        }
-
-        // Reset form
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          height: "",
-          weight: "",
-        });
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        setPreviewType(null);
-        setShowPreview(false);
-        setUploadToGoogleDrive(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-
-        // Refresh file list
-        if (onRefresh) onRefresh();
-      } else {
+      if (!response.ok) {
         toast.error(data.error || "Failed to submit form");
+        return;
       }
+
+      toast.success("Form submitted successfully! File uploaded to My Drive.");
+
+      if (shouldUploadToGoogleDrive) {
+        try {
+          const googleAuth = await ensureGoogleDriveAccessToken({
+            interactive: false,
+          });
+          await uploadFileToGoogleDrive(fileToUpload, googleAuth.accessToken);
+          toast.success("File also uploaded to Google Drive!");
+        } catch (googleError) {
+          console.error("Google Drive upload error:", googleError);
+
+          if (googleError.message === "GOOGLE_DRIVE_AUTH_REQUIRED") {
+            toast.info(
+              "Google Drive is not authorized in this browser yet. Open /google-drive-connected in another tab once, then upload again.",
+              {
+                autoClose: 6000,
+              },
+            );
+          } else {
+            toast.warning(
+              "File reached My Drive, but the Google Drive upload failed.",
+            );
+          }
+        }
+      }
+
+      resetForm();
+      if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Form submission error:", error);
       toast.error("Failed to submit form");
@@ -229,20 +247,16 @@ function FormSection({ onRefresh }) {
     switch (previewType) {
       case "image":
         return <img src={previewUrl} alt={selectedFile.name} />;
-
       case "video":
         return (
           <video controls autoPlay>
             <source src={previewUrl} type={selectedFile.type} />
           </video>
         );
-
       case "audio":
         return <audio controls autoPlay src={previewUrl} />;
-
       case "text":
         return <pre>{previewUrl || "Unable to preview"}</pre>;
-
       case "pdf":
         return (
           <iframe
@@ -250,7 +264,6 @@ function FormSection({ onRefresh }) {
             title={selectedFile.name}
           />
         );
-
       default:
         return (
           <div className="file-info-only">
@@ -419,13 +432,12 @@ function FormSection({ onRefresh }) {
               checked={uploadToGoogleDrive}
               onChange={(e) => setUploadToGoogleDrive(e.target.checked)}
             />
-            <span className="checkbox-text">
-              Also upload to Google Drive (requires OAuth setup)
-            </span>
+            <span className="checkbox-text">Also upload to Google Drive</span>
           </label>
           <p className="checkbox-hint">
-            ✓ Files will upload automatically to your connected Google Drive
-            account
+            {hasValidStoredGoogleDriveAuth()
+              ? `Ready for ${googleDriveAuth?.email || "your Google account"}`
+              : "Authorize once in another tab at /google-drive-connected, then uploads will go straight to Google Drive without a sign-in prompt here."}
           </p>
         </div>
 

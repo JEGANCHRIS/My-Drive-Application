@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { FiX, FiUser, FiHardDrive, FiFile, FiTrash2 } from "react-icons/fi";
-import GoogleDriveStatus from "./GoogleDriveStatus";
 
 function SettingsModal({ onClose, currentUser }) {
   const [storageData, setStorageData] = useState(null);
@@ -85,13 +84,6 @@ function SettingsModal({ onClose, currentUser }) {
                 details.
               </p>
             )}
-          </div>
-
-          <div className="settings-section">
-            <h4>
-              <FiHardDrive /> Google Drive Integration
-            </h4>
-            <GoogleDriveStatus />
           </div>
 
           <div className="settings-section">
