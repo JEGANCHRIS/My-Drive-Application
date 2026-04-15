@@ -1,44 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
 import { FiUpload, FiX, FiFolder, FiFile } from "react-icons/fi";
 import axios from "axios";
 import { toast } from "react-toastify";
-import {
-  ensureGoogleDriveAccessToken,
-  GOOGLE_DRIVE_AUTH_EVENT,
-  hasValidStoredGoogleDriveAuth,
-  readStoredGoogleDriveAuth,
-  uploadFileToGoogleDrive,
-} from "../utils/googleDriveAuth";
 
-function UploadButton({ currentFolder, onUploadComplete }) {
+function UploadButton({ currentFolder, currentUser, onUploadComplete }) {
   const fileInputRef = useRef(null);
   const folderInputRef = useRef(null);
-  const [showUploadTypeModal, setShowUploadTypeModal] = useState(false);
-  const [googleDriveConnected, setGoogleDriveConnected] = useState(
-    hasValidStoredGoogleDriveAuth(),
-  );
-  const [googleEmail, setGoogleEmail] = useState(
-    readStoredGoogleDriveAuth()?.email || null,
-  );
-
-  const API_BASE_URL =
-    import.meta.env.VITE_API_URL ||
-    "https://my-drive-application.onrender.com/api";
-
-  useEffect(() => {
-    const syncGoogleDriveStatus = () => {
-      setGoogleDriveConnected(hasValidStoredGoogleDriveAuth());
-      setGoogleEmail(readStoredGoogleDriveAuth()?.email || null);
-    };
-
-    window.addEventListener(GOOGLE_DRIVE_AUTH_EVENT, syncGoogleDriveStatus);
-    return () => {
-      window.removeEventListener(
-        GOOGLE_DRIVE_AUTH_EVENT,
-        syncGoogleDriveStatus,
-      );
-    };
-  }, []);
+  const [showUploadTypeModal, setShowUploadTypeModal] = React.useState(false);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
@@ -48,22 +16,27 @@ function UploadButton({ currentFolder, onUploadComplete }) {
   const handleUpload = async (files, isFolder = false) => {
     let targetFolderId = currentFolder || "";
 
+    // If uploading a folder, create it first
     if (isFolder && files.length > 0) {
       try {
+        // Get folder name from the first file's webkitRelativePath
         const folderPath = files[0].webkitRelativePath;
         const folderName = folderPath.split("/")[0];
 
-        const folderResponse = await fetch(`${API_BASE_URL}/folders`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...getAuthHeaders(),
+        const folderResponse = await fetch(
+          "https://my-drive-application.onrender.com/api/folders",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            body: JSON.stringify({
+              name: folderName,
+              parentFolderId: currentFolder || null,
+            }),
           },
-          body: JSON.stringify({
-            name: folderName,
-            parentFolderId: currentFolder || null,
-          }),
-        });
+        );
 
         if (!folderResponse.ok) {
           const errorData = await folderResponse.json();
@@ -72,6 +45,7 @@ function UploadButton({ currentFolder, onUploadComplete }) {
 
         const createdFolder = await folderResponse.json();
         targetFolderId = createdFolder._id;
+
         toast.success(`Folder "${folderName}" created`);
       } catch (error) {
         console.error("Error creating folder:", error);
@@ -80,7 +54,9 @@ function UploadButton({ currentFolder, onUploadComplete }) {
       }
     }
 
+    // Upload all files
     for (let file of files) {
+      // Check file size (500MB limit)
       if (file.size > 500 * 1024 * 1024) {
         toast.error(`${file.name} exceeds 500MB limit and was not uploaded`);
         continue;
@@ -89,11 +65,14 @@ function UploadButton({ currentFolder, onUploadComplete }) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folderId", targetFolderId);
-      formData.append("uploadToGoogle", "false");
 
       try {
+        console.log(
+          `Uploading: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+        );
+
         const response = await axios.post(
-          `${API_BASE_URL}/files/upload`,
+          "https://my-drive-application.onrender.com/api/files/upload",
           formData,
           {
             headers: {
@@ -109,44 +88,26 @@ function UploadButton({ currentFolder, onUploadComplete }) {
           },
         );
 
-        let uploadedToGoogleDrive = false;
-
         if (response.status === 201 || response.status === 200) {
-          if (googleDriveConnected) {
-            try {
-              const googleAuth = await ensureGoogleDriveAccessToken({
-                interactive: true,
-                prompt: "",
-              });
-              await uploadFileToGoogleDrive(file, googleAuth.accessToken);
-              uploadedToGoogleDrive = true;
-            } catch (googleError) {
-              console.error("Google Drive upload error:", googleError);
-              toast.warning(
-                `${file.name} reached My Drive, but Google Drive upload failed.`,
-              );
-            }
-          }
+          toast.success(`Uploaded: ${file.name}`);
 
-          toast.success(
-            uploadedToGoogleDrive
-              ? `Uploaded: ${file.name} (also saved to Google Drive)`
-              : `Uploaded: ${file.name}`,
-          );
-
+          // Refresh the file list (calls fetchContents in App.jsx)
           if (onUploadComplete) {
             onUploadComplete();
           }
 
+          // Dispatch a custom event to refresh storage in sidebar
           window.dispatchEvent(new Event("storage-updated"));
         }
       } catch (error) {
         console.error("Upload error:", error);
         if (error.response) {
+          console.error("Server response:", error.response.data);
           toast.error(
             `Failed to upload ${file.name}: ${error.response.data.error || error.message}`,
           );
         } else if (error.request) {
+          console.error("No response from server");
           toast.error(
             `Failed to upload ${file.name}. Server not responding. Make sure backend is running on port 5000`,
           );
@@ -161,14 +122,14 @@ function UploadButton({ currentFolder, onUploadComplete }) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     handleUpload(files, false);
-    e.target.value = "";
+    e.target.value = ""; // Reset input
   };
 
   const handleFolderSelect = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     handleUpload(files, true);
-    e.target.value = "";
+    e.target.value = ""; // Reset input
   };
 
   const handleUploadTypeSelect = (isFolder) => {
@@ -182,29 +143,12 @@ function UploadButton({ currentFolder, onUploadComplete }) {
 
   return (
     <>
-      <div className="relative">
-        <button
-          className="upload-btn"
-          onClick={() => setShowUploadTypeModal(true)}
-        >
-          <FiUpload /> Upload
-          {googleDriveConnected && (
-            <span
-              className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
-              title={
-                googleEmail
-                  ? `Google Drive ready for ${googleEmail}`
-                  : "Google Drive ready"
-              }
-            ></span>
-          )}
-        </button>
-        {googleDriveConnected && (
-          <div className="absolute top-full left-0 mt-1 text-xs text-green-600 whitespace-nowrap">
-            Google Drive ready
-          </div>
-        )}
-      </div>
+      <button
+        className="upload-btn"
+        onClick={() => setShowUploadTypeModal(true)}
+      >
+        <FiUpload /> Upload
+      </button>
 
       <input
         type="file"
@@ -218,6 +162,7 @@ function UploadButton({ currentFolder, onUploadComplete }) {
         type="file"
         ref={folderInputRef}
         style={{ display: "none" }}
+        // @ts-ignore
         webkitdirectory=""
         directory=""
         multiple

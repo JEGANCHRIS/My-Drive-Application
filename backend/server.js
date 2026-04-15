@@ -15,7 +15,6 @@ const authRoutes = require("./routes/authRoutes");
 const summarizeRoutes = require("./routes/summarizeRoutes");
 const activityRoutes = require("./routes/activityRoutes");
 const policyRoutes = require("./routes/policyRoutes");
-const { router: googleDriveRoutes } = require("./routes/googleDriveRoutes");
 
 const app = express();
 
@@ -99,7 +98,6 @@ app.use("/api/summarize", summarizeRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/storage", storageRoutes);
 app.use("/api/form", require("./routes/formRoutes"));
-app.use("/api/google", googleDriveRoutes);
 app.use("/", policyRoutes);
 
 // Error handling middleware

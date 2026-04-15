@@ -11,7 +11,6 @@ import Register from "./pages/Register";
 import App from "./App";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
-import GoogleDriveConnected from "./pages/GoogleDriveConnected";
 import { ToastContainer } from "react-toastify";
 
 // Protected Route Component
@@ -89,10 +88,6 @@ function RouterComponent() {
               <TermsOfService />
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/google-drive-connected"
-          element={<GoogleDriveConnected />}
         />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

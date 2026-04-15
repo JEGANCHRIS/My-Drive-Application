@@ -6,10 +6,6 @@ function SettingsModal({ onClose, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const API_BASE_URL =
-    import.meta.env.VITE_API_URL ||
-    "https://my-drive-application.onrender.com/api";
-
   useEffect(() => {
     fetchStorageData();
     checkLoginStatus();
@@ -23,11 +19,14 @@ function SettingsModal({ onClose, currentUser }) {
   const fetchStorageData = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/storage/usage`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
+      const response = await fetch(
+        "https://my-drive-application.onrender.com/api/storage/usage",
+        {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
         },
-      });
+      );
       const data = await response.json();
       setStorageData(data);
     } catch (error) {

@@ -7,10 +7,6 @@ const File = require("../models/File");
 const Folder = require("../models/Folder");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/auth");
-const {
-  uploadToGoogleDrive,
-  hasGoogleDriveConnected,
-} = require("../utils/googleDrive");
 
 const router = express.Router();
 
@@ -55,37 +51,12 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const { folderId, uploadToGoogle } = req.body;
+      const { folderId } = req.body;
 
       // Get user info from token
       const user = await User.findById(req.userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
-      }
-
-      let googleDriveFileId = null;
-      let googleDriveLink = null;
-
-      // Upload to Google Drive if user has it connected and requests it
-      if (uploadToGoogle === "true" && hasGoogleDriveConnected(user)) {
-        try {
-          console.log("📤 Uploading to Google Drive...");
-          const googleFile = await uploadToGoogleDrive(
-            req.userId,
-            req.file.path,
-            req.file.originalname,
-            req.file.mimetype,
-          );
-          googleDriveFileId = googleFile.id;
-          googleDriveLink = googleFile.webViewLink;
-          console.log("✅ Google Drive upload successful:", googleDriveLink);
-        } catch (googleError) {
-          console.error(
-            "⚠️ Google Drive upload failed, but continuing with local storage:",
-            googleError.message,
-          );
-          // Don't fail the whole upload if Google Drive fails
-        }
       }
 
       console.log("Creating file record...");
@@ -98,8 +69,6 @@ router.post(
         path: req.file.path,
         folderId: folderId || null,
         userId: req.userId,
-        googleDriveId: googleDriveFileId,
-        googleDriveLink: googleDriveLink,
         createdBy: {
           email: user.email,
           name: user.name,
@@ -135,15 +104,7 @@ router.post(
       console.log("✅ Recent upload record saved");
 
       console.log("Sending success response...");
-      return res.status(201).json({
-        ...file.toObject(),
-        googleDrive: googleDriveFileId
-          ? {
-              id: googleDriveFileId,
-              link: googleDriveLink,
-            }
-          : null,
-      });
+      return res.status(201).json(file);
     } catch (error) {
       console.error("❌ Upload error:", error);
       console.error("Error stack:", error.stack);
