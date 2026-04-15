@@ -5,6 +5,10 @@ const GOOGLE_DRIVE_SCOPE = [
 
 const GOOGLE_IDENTITY_SCRIPT = "https://accounts.google.com/gsi/client";
 const GOOGLE_DRIVE_AUTH_EVENT = "google-drive-auth-changed";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://my-drive-application.onrender.com/api";
+let cachedGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 const getGoogleDriveStorageKey = () => {
   try {
@@ -17,7 +21,24 @@ const getGoogleDriveStorageKey = () => {
   }
 };
 
-const getGoogleClientId = () => import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const getGoogleClientId = async () => {
+  if (cachedGoogleClientId) {
+    return cachedGoogleClientId;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/google/client-config`);
+    if (!response.ok) {
+      throw new Error("Failed to load Google client config");
+    }
+
+    const data = await response.json();
+    cachedGoogleClientId = data?.clientId || "";
+    return cachedGoogleClientId;
+  } catch {
+    return "";
+  }
+};
 
 const notifyGoogleDriveAuthChanged = () => {
   window.dispatchEvent(new Event(GOOGLE_DRIVE_AUTH_EVENT));
@@ -113,9 +134,9 @@ const fetchGoogleAccountEmail = async (accessToken) => {
 const requestGoogleDriveAccessToken = async ({ interactive, prompt = "" }) => {
   await loadGoogleIdentityScript();
 
-  const clientId = getGoogleClientId();
+  const clientId = await getGoogleClientId();
   if (!clientId) {
-    throw new Error("Missing VITE_GOOGLE_CLIENT_ID");
+    throw new Error("Missing Google client ID configuration");
   }
 
   return new Promise((resolve, reject) => {

@@ -21,6 +21,13 @@ const SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
 ];
 
+// Public client config for browser-side Google auth
+router.get("/client-config", (req, res) => {
+  res.json({
+    clientId: process.env.GOOGLE_CLIENT_ID || null,
+  });
+});
+
 // Generate Google Auth URL
 router.get("/auth-url", authMiddleware, async (req, res) => {
   try {
