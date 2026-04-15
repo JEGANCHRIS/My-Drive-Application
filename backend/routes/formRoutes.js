@@ -2,11 +2,13 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs-extra");
-const jwt = require("jsonwebtoken");
 const File = require("../models/File");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/auth");
-const { google } = require("googleapis");
+const {
+  uploadToGoogleDrive,
+  hasGoogleDriveConnected,
+} = require("../utils/googleDrive");
 
 const router = express.Router();
 
@@ -33,89 +35,6 @@ const formStorage = multer.diskStorage({
 const uploadFormFile = multer({
   storage: formStorage,
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
-});
-
-// Google Drive OAuth2 configuration
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URI =
-  process.env.GOOGLE_REDIRECT_URI ||
-  "https://my-drive-application.onrender.com/api/form/google/callback";
-
-// Temporary storage for file metadata during OAuth flow
-const pendingUploads = new Map();
-
-// Route to handle Google OAuth Callback
-router.get("/google/callback", async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    const token = state;
-
-    if (!token) {
-      return res
-        .status(401)
-        .json({ error: "No authentication token provided" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secretkey");
-    const userId = decoded.userId;
-
-    const uploadData = pendingUploads.get(userId);
-
-    if (!uploadData) {
-      return res.status(400).json({ error: "No pending upload found." });
-    }
-
-    const oauth2Client = new google.auth.OAuth2(
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      GOOGLE_REDIRECT_URI,
-    );
-
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-
-    const drive = google.drive({ version: "v3", auth: oauth2Client });
-    const file = await File.findById(uploadData.fileId);
-
-    if (!file) {
-      return res.status(404).json({ error: "File not found" });
-    }
-
-    console.log("📤 Uploading to Google Drive...");
-    const response = await drive.files.create({
-      resource: {
-        name: file.originalName,
-        mimeType: file.type,
-        parents: ["root"],
-        description: `Uploaded from My Drive Form - ${uploadData.formData?.name}`,
-      },
-      media: {
-        mimeType: file.type,
-        body: fs.createReadStream(file.path),
-      },
-      fields: "id, name, webViewLink",
-    });
-
-    pendingUploads.delete(userId);
-    console.log("Google Drive Upload Success:", response.data.id);
-
-    res.send(`
-      <html>
-        <head><title>Upload Successful</title></head>
-        <body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#f0f2f5;">
-          <div style="background:white;padding:40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center;">
-            <h2 style="color:#38a169;">Success!</h2>
-            <p>Your file has been uploaded to Google Drive.</p>
-            <p>You can close this window.</p>
-          </div>
-        </body>
-      </html>
-    `);
-  } catch (error) {
-    console.error("❌ Google Drive OAuth callback error:", error);
-    res.status(500).json({ error: error.message });
-  }
 });
 
 // Submit form with file upload
@@ -192,61 +111,53 @@ router.post(
         uploadToGoogleDrive === true ||
         uploadToGoogleDrive === "on";
 
-      if (isGoogleDriveChecked && email) {
-        console.log("🚀 Starting Google Drive OAuth flow...");
+      let googleDriveResult = null;
 
-        const formData = { name, email, phone, height, weight };
-
-        // Extract your Auth Token and add it as state to the Google URL
-        const token = req.header("Authorization")?.replace("Bearer ", "");
-
-        if (token) {
-          pendingUploads.set(req.userId, {
-            email,
-            formData,
-            fileId: file._id,
-            token,
-          });
-
-          const oauth2Client = new google.auth.OAuth2(
-            GOOGLE_CLIENT_ID,
-            GOOGLE_CLIENT_SECRET,
-            GOOGLE_REDIRECT_URI,
+      // Upload to Google Drive if checkbox is checked AND user has Google Drive connected
+      if (isGoogleDriveChecked) {
+        if (hasGoogleDriveConnected(user)) {
+          console.log(
+            "📤 User has Google Drive connected, uploading automatically...",
           );
+          try {
+            const googleFile = await uploadToGoogleDrive(
+              req.userId,
+              req.file.path,
+              req.file.originalname,
+              req.file.mimetype,
+            );
 
-          const authUrl = oauth2Client.generateAuthUrl({
-            access_type: "offline",
-            scope: [
-              "https://www.googleapis.com/auth/drive.file",
-              "https://www.googleapis.com/auth/drive",
-              "email",
-              "profile",
-            ],
-            state: token, // Pass the token here
-            prompt: "consent",
-          });
+            // Update file record with Google Drive info
+            file.googleDriveId = googleFile.id;
+            file.googleDriveLink = googleFile.webViewLink;
+            await file.save();
 
-          console.log("🔗 Google Auth URL generated");
-
-          return res.json({
-            message: "Form submitted successfully!",
-            file: {
-              id: file._id,
-              name: file.originalName,
-              size: file.size,
-            },
-            googleDrive: {
-              needsAuth: true,
-              authUrl: authUrl,
-            },
-          });
+            googleDriveResult = {
+              success: true,
+              id: googleFile.id,
+              link: googleFile.webViewLink,
+            };
+            console.log("✅ Google Drive upload successful:", googleFile.id);
+          } catch (googleError) {
+            console.error(
+              "⚠️ Google Drive upload failed:",
+              googleError.message,
+            );
+            googleDriveResult = {
+              success: false,
+              error: googleError.message,
+            };
+          }
         } else {
-          console.error("❌ No auth token found in request headers");
+          console.log("ℹ️ Google Drive upload skipped (user not connected)");
+          googleDriveResult = {
+            success: false,
+            needsConnection: true,
+            message: "Please connect your Google Drive in Settings first",
+          };
         }
       } else {
-        console.log(
-          "ℹ️ Google Drive upload skipped (Checkbox unchecked or missing email)",
-        );
+        console.log("ℹ️ Google Drive upload skipped (checkbox unchecked)");
       }
 
       res.json({
@@ -258,7 +169,7 @@ router.post(
           type: file.type,
           previewUrl: `https://my-drive-application.onrender.com/api/files/preview/${file._id}`,
         },
-        googleDrive: null,
+        googleDrive: googleDriveResult,
       });
     } catch (error) {
       console.error("❌ Form submission error:", error);

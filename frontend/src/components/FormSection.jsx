@@ -180,40 +180,17 @@ function FormSection({ onRefresh }) {
 
         console.log("Backend response:", data);
 
-        if (data.googleDrive?.needsAuth) {
-          toast.info("Opening Google Drive authorization...", {
-            autoClose: 3000,
-          });
-          console.log("Opening Google Auth Window:", data.googleDrive.authUrl);
-
-          // Open Google OAuth window
-          const authWindow = window.open(data.googleDrive.authUrl, "_blank");
-
-          if (!authWindow) {
-            toast.error(
-              "Popup blocked! Please allow popups for this site to authorize Google Drive.",
-              { autoClose: 8000 },
-            );
-          }
-
-          // Poll for completion
-          const checkAuth = setInterval(() => {
-            try {
-              if (authWindow && authWindow.closed) {
-                clearInterval(checkAuth);
-                toast.success("Google Drive authorization completed!");
-                setUploading(false);
-              }
-            } catch (e) {
-              // Cross-Origin-Opener-Policy blocks access to popup.closed
-              // Assume success after timeout
-              clearInterval(checkAuth);
-              toast.success("Google Drive authorization completed!");
-              setUploading(false);
-            }
-          }, 1000);
-        } else if (data.googleDrive?.success) {
-          toast.success("File also uploaded to Google Drive!");
+        // Check if Google Drive upload was successful
+        if (data.googleDrive?.success) {
+          toast.success("✅ File also uploaded to Google Drive!");
+        } else if (data.googleDrive?.needsConnection) {
+          toast.info(
+            data.googleDrive.message ||
+              "Please connect Google Drive in Settings for automatic uploads",
+            {
+              autoClose: 5000,
+            },
+          );
         }
 
         // Reset form
@@ -446,12 +423,10 @@ function FormSection({ onRefresh }) {
               Also upload to Google Drive (requires OAuth setup)
             </span>
           </label>
-          {uploadToGoogleDrive && (
-            <p className="checkbox-hint warning">
-              ⚠️ Google Drive integration requires OAuth credentials. File will
-              still upload to My Drive successfully.
-            </p>
-          )}
+          <p className="checkbox-hint">
+            ✓ Files will upload automatically to your connected Google Drive
+            account
+          </p>
         </div>
 
         <button
