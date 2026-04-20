@@ -1,18 +1,20 @@
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
-  FiUpload,
-  FiX,
+  FiArchive,
+  FiCamera,
+  FiCheck,
+  FiCode,
   FiEye,
   FiFile,
-  FiCheck,
-  FiCamera,
+  FiFileText,
   FiFilm,
   FiMusic,
-  FiArchive,
-  FiCode,
-  FiFileText,
+  FiUpload,
+  FiX,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
+
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL?.trim();
 
 function FormSection({ onRefresh }) {
   const [formData, setFormData] = useState({
@@ -27,12 +29,12 @@ function FormSection({ onRefresh }) {
   const [previewType, setPreviewType] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadToGoogleDrive, setUploadToGoogleDrive] = useState(false);
+  const [uploadToGoogleDrive, setUploadToGoogleDrive] = useState(true);
   const fileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const getFileIcon = (type) => {
@@ -45,20 +47,23 @@ function FormSection({ onRefresh }) {
       type.includes("zip") ||
       type.includes("rar") ||
       type.includes("archive")
-    )
+    ) {
       return <FiArchive size={20} />;
+    }
     if (
       type.includes("text") ||
       type.includes("json") ||
       type.includes("xml") ||
       type.includes("javascript")
-    )
+    ) {
       return <FiCode size={20} />;
+    }
     return <FiFile size={20} />;
   };
 
   const getPreviewType = (file) => {
     if (!file) return null;
+
     const type = file.type;
     const ext = file.name.split(".").pop().toLowerCase();
 
@@ -78,8 +83,10 @@ function FormSection({ onRefresh }) {
       ext === "ts" ||
       ext === "html" ||
       ext === "css"
-    )
+    ) {
       return "text";
+    }
+
     return "unsupported";
   };
 
@@ -91,47 +98,60 @@ function FormSection({ onRefresh }) {
 
     setSelectedFile(file);
     const type = getPreviewType(file);
-    console.log("Preview type:", type);
     setPreviewType(type);
-    setShowPreview(true); // Auto-show preview
+    setShowPreview(true);
 
-    // Create preview based on file type
     const reader = new FileReader();
 
     if (type === "image" || type === "video" || type === "audio") {
-      reader.onloadend = () => {
-        console.log("Data URL created, length:", reader.result?.length);
-        setPreviewUrl(reader.result);
-      };
+      reader.onloadend = () => setPreviewUrl(reader.result);
       reader.onerror = () => {
         console.error("Error reading file as data URL");
         toast.error("Failed to load file preview");
       };
       reader.readAsDataURL(file);
-    } else if (type === "text") {
-      reader.onloadend = () => {
-        console.log("Text file read, length:", reader.result?.length);
-        setPreviewUrl(reader.result);
-      };
+      return;
+    }
+
+    if (type === "text") {
+      reader.onloadend = () => setPreviewUrl(reader.result);
       reader.onerror = () => {
         console.error("Error reading text file");
         toast.error("Failed to load text preview");
       };
       reader.readAsText(file);
-    } else if (type === "pdf") {
-      reader.onloadend = () => {
-        console.log("PDF data URL created, length:", reader.result?.length);
-        setPreviewUrl(reader.result);
-      };
+      return;
+    }
+
+    if (type === "pdf") {
+      reader.onloadend = () => setPreviewUrl(reader.result);
       reader.onerror = () => {
         console.error("Error reading PDF");
         toast.error("Failed to load PDF preview");
       };
       reader.readAsDataURL(file);
-    } else {
-      // For non-preview files, just show file info
-      console.log("No preview available for this file type");
-      setPreviewUrl(null);
+      return;
+    }
+
+    setPreviewUrl(null);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      height: "",
+      weight: "",
+    });
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setPreviewType(null);
+    setShowPreview(false);
+    setUploadToGoogleDrive(true);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -143,104 +163,76 @@ function FormSection({ onRefresh }) {
       return;
     }
 
+    if (!uploadToGoogleDrive) {
+      toast.error("Enable Google Drive upload to send this form to n8n.");
+      return;
+    }
+
+    if (!N8N_WEBHOOK_URL) {
+      toast.error("n8n webhook URL is missing. Check VITE_N8N_WEBHOOK_URL.");
+      return;
+    }
+
     setUploading(true);
 
     try {
       const uploadFormData = new FormData();
+      uploadFormData.append("file", selectedFile);
       uploadFormData.append("formFile", selectedFile);
       uploadFormData.append("name", formData.name);
       uploadFormData.append("email", formData.email);
       uploadFormData.append("phone", formData.phone);
       uploadFormData.append("height", formData.height);
       uploadFormData.append("weight", formData.weight);
-      uploadFormData.append("uploadToGoogleDrive", uploadToGoogleDrive);
+      uploadFormData.append("uploadToGoogleDrive", "true");
+      uploadFormData.append("source", "frontend-form");
+      uploadFormData.append("fileName", selectedFile.name);
+      uploadFormData.append("fileType", selectedFile.type || "");
+      uploadFormData.append("fileSize", String(selectedFile.size));
 
-      const token = localStorage.getItem("token");
+      console.log("Submitting form to n8n webhook:", N8N_WEBHOOK_URL);
 
-      console.log("Submitting form...");
-      console.log("Upload to Google Drive:", uploadToGoogleDrive);
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        body: uploadFormData,
+      });
 
-      const response = await fetch(
-        "https://my-drive-application.onrender.com/api/form/submit",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: uploadFormData,
-        },
+      // Handle redirect responses from n8n (e.g., OAuth callbacks)
+      if (response.status === 302 || response.status === 301) {
+        const redirectLocation = response.headers.get("location");
+        console.log("⚠️ n8n is attempting to redirect:", redirectLocation);
+        toast.error(
+          "The n8n workflow is redirecting to Google OAuth. " +
+            "Please ensure your n8n Google Drive node is configured with stored credentials, " +
+            "not OAuth. Check your n8n workflow settings.",
+        );
+        return;
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : { message: await response.text() };
+
+      if (!response.ok) {
+        toast.error(data.error || data.message || "Failed to submit form");
+        return;
+      }
+
+      console.log("n8n response:", data);
+      toast.success(
+        data.message ||
+          "Form submitted successfully! File sent to n8n and saved to Google Drive.",
       );
 
-      const data = await response.json();
+      resetForm();
 
-      if (response.ok) {
-        toast.success(
-          "Form submitted successfully! File uploaded to My Drive.",
-        );
-
-        console.log("Backend response:", data);
-
-        if (data.googleDrive?.needsAuth) {
-          toast.info("Opening Google Drive authorization...", {
-            autoClose: 3000,
-          });
-          console.log("Opening Google Auth Window:", data.googleDrive.authUrl);
-
-          // Open Google OAuth window
-          const authWindow = window.open(data.googleDrive.authUrl, "_blank");
-
-          if (!authWindow) {
-            toast.error(
-              "Popup blocked! Please allow popups for this site to authorize Google Drive.",
-              { autoClose: 8000 },
-            );
-          }
-
-          // Poll for completion
-          const checkAuth = setInterval(() => {
-            try {
-              if (authWindow && authWindow.closed) {
-                clearInterval(checkAuth);
-                toast.success("Google Drive authorization completed!");
-                setUploading(false);
-              }
-            } catch (e) {
-              // Cross-Origin-Opener-Policy blocks access to popup.closed
-              // Assume success after timeout
-              clearInterval(checkAuth);
-              toast.success("Google Drive authorization completed!");
-              setUploading(false);
-            }
-          }, 1000);
-        } else if (data.googleDrive?.success) {
-          toast.success("File also uploaded to Google Drive!");
-        }
-
-        // Reset form
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          height: "",
-          weight: "",
-        });
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        setPreviewType(null);
-        setShowPreview(false);
-        setUploadToGoogleDrive(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-
-        // Refresh file list
-        if (onRefresh) onRefresh();
-      } else {
-        toast.error(data.error || "Failed to submit form");
+      if (onRefresh) {
+        onRefresh();
       }
     } catch (error) {
       console.error("Form submission error:", error);
-      toast.error("Failed to submit form");
+      toast.error("Failed to send the file to the n8n webhook");
     } finally {
       setUploading(false);
     }
@@ -252,20 +244,16 @@ function FormSection({ onRefresh }) {
     switch (previewType) {
       case "image":
         return <img src={previewUrl} alt={selectedFile.name} />;
-
       case "video":
         return (
           <video controls autoPlay>
             <source src={previewUrl} type={selectedFile.type} />
           </video>
         );
-
       case "audio":
         return <audio controls autoPlay src={previewUrl} />;
-
       case "text":
         return <pre>{previewUrl || "Unable to preview"}</pre>;
-
       case "pdf":
         return (
           <iframe
@@ -273,7 +261,6 @@ function FormSection({ onRefresh }) {
             title={selectedFile.name}
           />
         );
-
       default:
         return (
           <div className="file-info-only">
@@ -443,13 +430,13 @@ function FormSection({ onRefresh }) {
               onChange={(e) => setUploadToGoogleDrive(e.target.checked)}
             />
             <span className="checkbox-text">
-              Also upload to Google Drive (requires OAuth setup)
+              Save to Google Drive through n8n
             </span>
           </label>
           {uploadToGoogleDrive && (
             <p className="checkbox-hint warning">
-              ⚠️ Google Drive integration requires OAuth credentials. File will
-              still upload to My Drive successfully.
+              The form will send this upload to your configured n8n webhook so
+              the workflow can store it in Google Drive.
             </p>
           )}
         </div>

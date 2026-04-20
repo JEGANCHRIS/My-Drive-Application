@@ -192,7 +192,12 @@ router.post(
         uploadToGoogleDrive === true ||
         uploadToGoogleDrive === "on";
 
-      if (isGoogleDriveChecked && email) {
+      // Check if this request is from n8n (which handles Google Drive upload)
+      const isFromN8n =
+        req.body.source === "frontend-form" ||
+        req.header("x-n8n-request") === "true";
+
+      if (isGoogleDriveChecked && email && !isFromN8n) {
         console.log("🚀 Starting Google Drive OAuth flow...");
 
         const formData = { name, email, phone, height, weight };
@@ -243,6 +248,10 @@ router.post(
         } else {
           console.error("❌ No auth token found in request headers");
         }
+      } else if (isFromN8n && isGoogleDriveChecked) {
+        console.log(
+          "✅ Request from n8n detected - n8n will handle Google Drive upload",
+        );
       } else {
         console.log(
           "ℹ️ Google Drive upload skipped (Checkbox unchecked or missing email)",
@@ -250,7 +259,9 @@ router.post(
       }
 
       res.json({
-        message: "Form submitted successfully! File uploaded to My Drive.",
+        message: isFromN8n
+          ? "Form submitted successfully! File uploaded to My Drive and queued for n8n processing."
+          : "Form submitted successfully! File uploaded to My Drive.",
         file: {
           id: file._id,
           name: file.originalName,
@@ -258,7 +269,7 @@ router.post(
           type: file.type,
           previewUrl: `https://my-drive-application.onrender.com/api/files/preview/${file._id}`,
         },
-        googleDrive: null,
+        googleDrive: isFromN8n ? { handledByN8n: true } : null,
       });
     } catch (error) {
       console.error("❌ Form submission error:", error);
