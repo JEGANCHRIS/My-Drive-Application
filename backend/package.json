@@ -15,6 +15,7 @@
     "express": "^5.0.0",
     "fs-extra": "^11.2.0",
     "googleapis": "^171.4.0",
+    "http-proxy-middleware": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.6.0",
     "mongoose": "^8.0.0",

@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const dotenv = require("dotenv");
+const { createProxyMiddleware } = require("http-proxy-middleware");
 const storageRoutes = require("./routes/storageRoutes");
 
 // Load environment variables
@@ -98,6 +99,20 @@ app.use("/api/summarize", summarizeRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/storage", storageRoutes);
 app.use("/api/form", require("./routes/formRoutes"));
+
+// n8n reverse proxy - strips X-Frame-Options so it can be embedded in iframe
+app.use("/n8n-proxy", createProxyMiddleware({
+  target: "https://my-drive-n8n-backend.onrender.com",
+  changeOrigin: true,
+  pathRewrite: { "^/n8n-proxy": "" },
+  on: {
+    proxyRes: (proxyRes) => {
+      delete proxyRes.headers["x-frame-options"];
+      delete proxyRes.headers["content-security-policy"];
+    },
+  },
+}));
+
 app.use("/", policyRoutes);
 
 // Error handling middleware
