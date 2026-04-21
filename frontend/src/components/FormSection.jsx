@@ -203,8 +203,8 @@ function FormSection({ onRefresh }) {
         console.log("⚠️ n8n is attempting to redirect:", redirectLocation);
         toast.error(
           "The n8n workflow is redirecting to Google OAuth. " +
-            "Please ensure your n8n Google Drive node is configured with stored credentials, " +
-            "not OAuth. Check your n8n workflow settings.",
+          "Please ensure your n8n Google Drive node is configured with stored credentials, " +
+          "not OAuth. Check your n8n workflow settings."
         );
         return;
       }
@@ -429,9 +429,7 @@ function FormSection({ onRefresh }) {
               checked={uploadToGoogleDrive}
               onChange={(e) => setUploadToGoogleDrive(e.target.checked)}
             />
-            <span className="checkbox-text">
-              Save to Google Drive through n8n
-            </span>
+            <span className="checkbox-text">Save to Google Drive through n8n</span>
           </label>
           {uploadToGoogleDrive && (
             <p className="checkbox-hint warning">
