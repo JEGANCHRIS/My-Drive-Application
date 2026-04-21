@@ -2887,21 +2887,20 @@ body {
 
 /* Workflow */
 .workflow-container {
-  padding: 32px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   height: 100%;
   gap: 12px;
   color: var(--text-secondary, #888);
+  box-sizing: border-box;
 }
 
 .workflow-top {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .workflow-select {
@@ -2917,6 +2916,14 @@ body {
 
 .workflow-select:focus {
   border-color: var(--accent-color, #4f8ef7);
+}
+
+.workflow-iframe {
+  width: 100%;
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  min-height: 0;
 }
 
 .workflow-header {

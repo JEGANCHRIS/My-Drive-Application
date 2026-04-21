@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { FiGitMerge } from "react-icons/fi";
 
+const N8N_URL = "https://my-drive-n8n-backend.onrender.com";
+
 function Workflow() {
   const [selected, setSelected] = useState("");
 
@@ -16,11 +18,23 @@ function Workflow() {
           <option value="n8n">n8n workflow</option>
         </select>
       </div>
-      <div className="workflow-header">
-        <FiGitMerge size={32} />
-        <h2>Workflow</h2>
-      </div>
-      <p className="workflow-description">Workflow features coming soon.</p>
+
+      {selected === "n8n" ? (
+        <iframe
+          src={N8N_URL}
+          className="workflow-iframe"
+          title="n8n Workflow"
+          allow="fullscreen"
+        />
+      ) : (
+        <>
+          <div className="workflow-header">
+            <FiGitMerge size={32} />
+            <h2>Workflow</h2>
+          </div>
+          <p className="workflow-description">Select a workflow from the dropdown above.</p>
+        </>
+      )}
     </div>
   );
 }
