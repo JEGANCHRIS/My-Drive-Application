@@ -16,7 +16,7 @@ function Workflow() {
 
   const handleRefresh = () => {
     if (iframeRef.current) {
-      iframeRef.current.src = N8N_PROXY;
+      iframeRef.current.contentWindow.location.reload();
     }
   };
 

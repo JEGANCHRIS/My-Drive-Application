@@ -100,15 +100,51 @@ app.use("/api/activities", activityRoutes);
 app.use("/api/storage", storageRoutes);
 app.use("/api/form", require("./routes/formRoutes"));
 
-// n8n reverse proxy - strips X-Frame-Options so it can be embedded in iframe
+// n8n reverse proxy - strips X-Frame-Options and rewrites asset URLs
 app.use("/n8n-proxy", createProxyMiddleware({
   target: "https://my-drive-n8n-backend.onrender.com",
   changeOrigin: true,
+  selfHandleResponse: true,
   pathRewrite: { "^/n8n-proxy": "" },
   on: {
-    proxyRes: (proxyRes) => {
+    proxyRes: (proxyRes, req, res) => {
       delete proxyRes.headers["x-frame-options"];
       delete proxyRes.headers["content-security-policy"];
+      delete proxyRes.headers["X-Frame-Options"];
+      delete proxyRes.headers["Content-Security-Policy"];
+
+      const contentType = proxyRes.headers["content-type"] || "";
+      const isTextContent = contentType.includes("text/html") ||
+                            contentType.includes("application/javascript") ||
+                            contentType.includes("text/javascript") ||
+                            contentType.includes("application/json");
+
+      if (isTextContent) {
+        let body = "";
+        proxyRes.on("data", (chunk) => { body += chunk.toString(); });
+        proxyRes.on("end", () => {
+          body = body
+            .replace(/https:\/\/my-drive-n8n-backend\.onrender\.com/g,
+              "https://my-drive-application.onrender.com/n8n-proxy")
+            .replace(/\/\/my-drive-n8n-backend\.onrender\.com/g,
+              "//my-drive-application.onrender.com/n8n-proxy");
+
+          const headers = { ...proxyRes.headers };
+          delete headers["x-frame-options"];
+          delete headers["content-security-policy"];
+          delete headers["transfer-encoding"];
+          headers["content-length"] = Buffer.byteLength(body);
+
+          res.writeHead(proxyRes.statusCode, headers);
+          res.end(body);
+        });
+      } else {
+        const headers = { ...proxyRes.headers };
+        delete headers["x-frame-options"];
+        delete headers["content-security-policy"];
+        res.writeHead(proxyRes.statusCode, headers);
+        proxyRes.pipe(res);
+      }
     },
   },
 }));
