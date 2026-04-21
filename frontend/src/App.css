@@ -2884,3 +2884,32 @@ body {
   background: linear-gradient(135deg, #0d7a6e 0%, #2dd46a 100%);
   transform: translateX(4px);
 }
+
+/* Workflow */
+.workflow-container {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--text-secondary, #888);
+}
+
+.workflow-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary, #333);
+}
+
+.workflow-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.workflow-description {
+  margin: 0;
+  font-size: 0.95rem;
+}

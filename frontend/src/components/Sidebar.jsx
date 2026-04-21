@@ -11,6 +11,7 @@ import {
   FiHome,
   FiFileText,
   FiShield,
+  FiGitMerge,
 } from "react-icons/fi";
 import { FileIcon } from "./Icons";
 
@@ -232,6 +233,17 @@ function Sidebar({
           }}
         >
           <FiFileText /> <span>Upload Form</span>
+        </div>
+
+        <div
+          className={`sidebar-item ${currentView === "workflow" ? "active" : ""}`}
+          onClick={() => {
+            onResetFolderNavigation();
+            onCloseDashboard();
+            setCurrentView("workflow");
+          }}
+        >
+          <FiGitMerge /> <span>Workflow</span>
         </div>
       </div>
 

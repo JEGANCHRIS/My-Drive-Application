@@ -17,6 +17,7 @@ import InputModal from "./components/InputModal";
 import Dashboard from "./pages/Dashboard";
 import EditProfileModal from "./components/EditProfileModal";
 import FormSection from "./components/FormSection";
+import Workflow from "./components/Workflow";
 import "./App.css";
 
 // Helper to get auth header
@@ -598,6 +599,10 @@ function App() {
 
     if (currentView === "form") {
       return <FormSection onRefresh={fetchContents} />;
+    }
+
+    if (currentView === "workflow") {
+      return <Workflow />;
     }
 
     if (currentView === "bin") {
