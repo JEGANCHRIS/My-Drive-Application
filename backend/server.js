@@ -6,8 +6,8 @@ const dotenv = require("dotenv");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const storageRoutes = require("./routes/storageRoutes");
 
-// Load environment variables
-dotenv.config();
+// Always load the backend-local .env, even if the process starts from repo root.
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 // Import routes
 const fileRoutes = require("./routes/fileRoutes");
